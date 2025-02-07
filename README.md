@@ -23,14 +23,24 @@ Eniwer Training Kit es un sistema web diseñado para validar y entrenar personas
 - [Composer](https://getcomposer.org/)
 - [Node.js](https://nodejs.org/)
 
-## 1. Clonar Repositorios
-#### Usando HTTP
+## 1. Preparación
+#### Clonar Repositorio usando HTTP
 ```
 git clone https://github.com/eniwer/training-kit.git
 ```
-#### Usando SSH
+#### Clonar Repositorio usando SSH
 ```
 git clone git@github.com:eniwer/training-kit.git
+```
+#### Configurar variables de entorno
+| Directorio | Archivo | Contenido |
+| ------ | ------ | ------ |
+| `training-kit/api` | `.env` | Variables de entorno Back-end |
+| `training-kit/web` | `.env.local` | Variables de entorno Front-end |
+| `training-kit/websocket` | `.env` | Variables de entorno WebSocket |
+#### Crear base de datos
+```
+psql -U postgres -c "CREATE DATABASE training;"
 ```
 
 ## 2. Instalación
@@ -50,12 +60,6 @@ npm install
 cd tranining-kit/web
 npm install
 ```
-#### Configurar variables de entorno
-| Directorio | Archivo | Contenido |
-| ------ | ------ | ------ |
-| `training-kit/api` | `.env` | Variables de entorno Back-end |
-| `training-kit/web` | `.env` | Variables de entorno Front-end |
-| `training-kit/websocket` | `.env` | Variables de entorno WebSocket |
 
 ## 3. Ejecución
 #### Iniciar Back-end
