@@ -44,7 +44,9 @@ export default {
 	saveSocket(context, params) {
 		context.commit('save_socket', { socket: params.socket });
 	},
-
+	users_online(context, params){
+		context.commit('users_online', {items: params});
+	},
 	user(context) {
 		api.defaults.headers.common['Authorization'] = 'Bearer ' + context.state.session.api.access_token;
 		return new Promise((resolve, reject) => {
@@ -137,7 +139,38 @@ export default {
 			});
 		});
 	},
-
+	users_list(context){
+		const check_users_online = (items) => {
+			const online_users = JSON.parse(JSON.stringify(context.getters.users_online.items));
+				if(online_users.items!=undefined) {
+					items.forEach(user => {
+						user.online = false;
+						if(online_users.items.includes(user.id)) {
+							user.online = true;
+						}
+					});
+				}
+				return items;
+		}
+		api.defaults.headers.common['Authorization'] = 'Bearer ' + context.state.session.api.access_token;
+		context.state.users_list.loading = true;
+		if(context.state.users_list.loaded == false){
+			return new Promise((resolve, reject) => {
+				api.get('api/users/list')
+				.then(response => {
+					let items = check_users_online(response.data);
+					context.commit('users_list', items)
+					resolve(response);
+				})
+				.catch(error => {
+					reject(error);
+				});
+			});
+		}else{
+			var items = check_users_online(context.getters.users_list.items);
+			context.commit('users_list', items)
+		}
+	},
 	user_logs(context) {
 		api.defaults.headers.common['Authorization'] = 'Bearer ' + context.state.session.api.access_token;
 		context.state.user_logs.loading = true;

@@ -31,22 +31,26 @@ const io = new Server(httpServer, {
     pingInterval: process.env.PING_INTERVAL,
 });
 app.use(bodyParser.json());
-
+var users_online = new Map();
 io.of('/priv').on('connection', (socket) => {
     console.log('\x1b[33m%s\x1b[0m', '/priv connection '+socket.id);
     axios.post(api_uri + '/websocket/auth', { token: socket.handshake.auth.token })
         .then(response => {
             const user = response.data.user;
-            io.of('/priv').emit('user_online', user);
+            users_online.set(socket.id, user.id);
+            io.of('/priv').emit('user_online', Array.from(users_online.values()));
             console.log('\x1b[32m%s\x1b[0m', '/priv user_online: '+ user.name);
             socket.on("disconnect", (reason) => {
                 console.log('\x1b[33m%s\x1b[0m', '/priv user_offline: '+ user.name);
                 console.log('\x1b[33m%s\x1b[0m', '/priv disconnection: '+socket.id+' ('+reason+')');
-                io.of('/priv').emit('user_offline', user);
+                users_online.delete(socket.id);
+                io.of('/priv').emit('user_online', Array.from(users_online.values()));
             });
         })
-        .catch(() => {
+        .catch((e) => {
             console.log('\x1b[33m%s\x1b[0m', '/priv error: '+socket.id);
+            io.of('/priv').emit('user_online', Array.from(users_online.values()));
+            users_online.delete(socket.id);
             socket.disconnect();
         });
 });

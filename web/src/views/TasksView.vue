@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import DeleteTaskModal from '@/components/DeleteTaskModal.vue';
 import ArchiveTaskModal from '@/components/ArchiveTaskModal.vue';
 import AddClientModal from '@/components/AddClientModal.vue';
+import UsersList from '@/components/UsersList.vue';
 import { computed } from 'vue'
 import { useStore } from 'vuex'
 import { ref } from 'vue';
@@ -77,6 +78,7 @@ export default {
 		ArchiveTaskModal,
 		AddClientModal,
 		VueDatePicker,
+		UsersList,
 	},
 	setup () {
 		const datepicker = ref<VueDatePicker>(null);
@@ -281,266 +283,272 @@ export default {
 	<DeleteTaskModal :task />
 	<ArchiveTaskModal :task />
 	<AddClientModal />
+	<div class="row px-3">
+		<div class="col ms-3">
+		<div class="container mt-5">
 
-	<div class="container mt-5">
+			<div id="tasks">
 
-		<div id="tasks">
-
-			<div class="card" :class="{ 'opacity-75' : tasks.loading }">
-				<div class="card-body">
-					<div class="row">
-						<div class="col-auto">
-							<button type="button" class="btn btn-primary" @click="openAddTaskModal()" :disabled="tasks.loading">
-								<i class="fas fa-plus me-1"></i>
-								<span>Tarea</span>
-							</button>
-						</div>
-						<div class="col-auto">
-							<button type="button" class="btn btn-primary" @click="openAddClientModal()" :disabled="tasks.loading">
-								<i class="fas fa-plus me-1"></i>
-								<span>Cliente</span>
-							</button>
-						</div>
-						<div class="col-auto">
-							<button type="button" class="btn btn-primary" @click="browse_tasks()" :disabled="tasks.loading">
-								<i class="fas fa-redo me-1"></i>
-								<span>Actualizar</span>
-							</button>
-						</div>
-						<div class="col-auto">
-							<button
-								type="button" class="btn" @click="toggleArchived()" :disabled="tasks.loading"
-								:class="{ 'btn-outline-primary' : !archived, 'btn-primary' : archived }"
-							>
-								<i class="fas fa-eye me-1" v-if="archived === true"></i>
-								<i class="fas fa-eye me-1" v-else></i>
-								<span>Ocultas</span>
-							</button>
+				<div class="card" :class="{ 'opacity-75' : tasks.loading }">
+					<div class="card-body">
+						<div class="row">
+							<div class="col-auto">
+								<button type="button" class="btn btn-primary" @click="openAddTaskModal()" :disabled="tasks.loading">
+									<i class="fas fa-plus me-1"></i>
+									<span>Tarea</span>
+								</button>
+							</div>
+							<div class="col-auto">
+								<button type="button" class="btn btn-primary" @click="openAddClientModal()" :disabled="tasks.loading">
+									<i class="fas fa-plus me-1"></i>
+									<span>Cliente</span>
+								</button>
+							</div>
+							<div class="col-auto">
+								<button type="button" class="btn btn-primary" @click="browse_tasks()" :disabled="tasks.loading">
+									<i class="fas fa-redo me-1"></i>
+									<span>Actualizar</span>
+								</button>
+							</div>
+							<div class="col-auto">
+								<button
+									type="button" class="btn" @click="toggleArchived()" :disabled="tasks.loading"
+									:class="{ 'btn-outline-primary' : !archived, 'btn-primary' : archived }"
+								>
+									<i class="fas fa-eye me-1" v-if="archived === true"></i>
+									<i class="fas fa-eye me-1" v-else></i>
+									<span>Ocultas</span>
+								</button>
+							</div>
 						</div>
 					</div>
+					<table class="table table-hover mb-0">
+						<thead class="border-top">
+							<tr>
+								<th style="width: 25%">Título</th>
+								<th style="width: 10%">Horas</th>
+								<th style="width: 15%">Cliente</th>
+								<th style="width: 15%">Entrega</th>
+								<th style="width: 15%">Estado</th>
+								<th style="width: 10%"></th>
+							</tr>			
+						</thead>
+						<tbody v-for="(item, index) in tasks.items" :key="index">
+							<tr>
+
+								<!-- TITULO -->
+								<td>
+									<div v-if="loaders.title.active == true && loaders.title.id == item.id" :class="{ 'opacity-50' : loaders.title.loading }">
+										<input
+											class="form-control form-control-sm"
+											v-model="loaders.title.value"
+											@change="updateTitle(item)"
+											@blur="disableTitleSelector()"
+										/>
+									</div>
+									<div v-else-if="item.title && item.title != null">
+										<button
+											class="btn btn-sm w-100 text-start"
+											:class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }"
+											@click="enableTitleSelector(item)"
+										>
+											<span>{{ item.title }}</span>
+										</button>
+									</div>
+									<div v-else>
+										<button
+											class="btn btn-sm w-100 text-start"
+											:class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }"
+											@click="enableTitleSelector(item)"
+										>
+											<i class="fas fa-quote-left"></i>
+										</button>
+									</div>
+								</td>
+
+								<!-- UNIDADES -->
+								<td>
+									<div class="input-group" :class="{ 'opacity-50' : loaders.units.loading == true && loaders.units.id == item.id }">
+										<button class="btn btn-outline-secondary btn-sm fs-075" @click="subUnit(item)" :disabled="item.units <= 1">
+											<i class="fas fa-fw fa-minus"></i>
+										</button>
+										<input
+											type="text"
+											class="form-control text-center form-control-sm"
+											:value="item.units"
+											disabled
+										>
+										<button class="btn btn-outline-secondary btn-sm fs-075" @click="addUnit(item)">
+											<i class="fas fa-fw fa-plus"></i>
+										</button>
+									</div>
+								</td>
+
+								<!-- CLIENTE -->
+								<td>
+									<div v-if="loaders.client.active == true && loaders.client.id == item.id" :class="{ 'opacity-50' : loaders.client.loading }">
+										<select
+											class="form-select form-select-sm"
+											v-model="loaders.client.value"
+											@change="updateClient(item)"
+											@blur="disableClientSelector()"
+										>
+											<option :value="null" disabled selected>Seleccionar</option>
+											<option v-for="(item, index) in clients.items" :key="index" :value="item.id">{{ item.name }}</option>
+										</select>
+									</div>
+									<div v-else-if="item.client_id && item.client_id != null && item.client && item.client.id">
+										<button
+											class="btn btn-sm w-100 text-center"
+											:class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }"
+											@click="enableClientSelector(item)"
+										>
+											<span>{{ item.client.name }}</span>
+										</button>
+									</div>
+									<div v-else>
+										<button
+											class="btn btn-sm w-100 text-center"
+											:class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }"
+											@click="enableClientSelector(item)"
+										>
+											<i class="fas fa-building"></i>
+										</button>
+									</div>
+								</td>
+
+								<!-- ENTREGA -->
+								<td>
+									<div v-if="loaders.delivery_date.active == true && loaders.delivery_date.id == item.id" :class="{ 'opacity-50' : loaders.delivery_date.loading }">
+										<VueDatePicker
+											v-model="loaders.delivery_date.value"
+											:format="format"
+											locale="es"
+											cancelText="Cancelar"
+											selectText="Seleccionar"
+											:enableTimePicker="false"
+											:dark="ui_theme === 'dark'"
+											:clearable="false"
+											:auto-apply="true"
+											timezone="UTC"
+											ref="datepicker"
+											@update:model-value="updateDeliveryDate"
+										></VueDatePicker>
+									</div>
+									<div v-else-if="item.delivery_date && item.delivery_date != null && item.delivery_date.length > 0">
+										<button class="btn btn-sm w-100 text-start" :class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }" @click="enableDeliveryDatePicker(item)">
+											<i class="fas fa-calendar ms-1 me-2"></i>
+											<span>{{ item.delivery }}</span>
+										</button>
+									</div>
+									<div v-else>
+										<button class="btn btn-sm w-100 text-center" @click="enableDeliveryDatePicker(item)" :class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }">
+											<i class="fas fa-calendar"></i>
+										</button>
+									</div>
+								</td>
+
+								<!-- ESTADO -->
+								<td>
+									<div class="dropdown" :class="{ 'opacity-50' : loaders.status.loading === true && loaders.status.id === item.id }">
+										<button
+											class="btn dropdown-toggle btn-sm w-100"
+											type="button"
+											data-bs-toggle="dropdown"
+											aria-expanded="false"
+											:class="{
+												'btn-light' : item.status_id === 1,
+												'btn-secondary' : item.status_id === 2,
+												'btn-danger' : item.status_id === 3,
+												'btn-warning' : item.status_id === 4,
+												'btn-info' : item.status_id === 5,
+												'btn-success' : item.status_id === 6,
+												'btn-dark' : item.status_id === 7,
+											}"
+										>
+											<span class="me-1" v-if="item.status_id === 1">Backlog</span>
+											<span class="me-1" v-if="item.status_id === 2">Planificada</span>
+											<span class="me-1" v-if="item.status_id === 3">En Curso</span>
+											<span class="me-1" v-if="item.status_id === 4">Detenida</span>
+											<span class="me-1" v-if="item.status_id === 5">En Revisión</span>
+											<span class="me-1" v-if="item.status_id === 6">Completada</span>
+											<span class="me-1" v-if="item.status_id === 7">Anulada</span>
+										</button>
+										<ul class="dropdown-menu">
+											<li>
+												<a class="dropdown-item" href="#" @click="updateStatus(item, 1)">
+													<span>Backlog</span>
+												</a>
+											</li>
+											<li>
+												<a class="dropdown-item" href="#" @click="updateStatus(item, 2)">
+													<span>Planificada</span>
+												</a>
+											</li>
+											<li>
+												<a class="dropdown-item" href="#" @click="updateStatus(item, 3)">
+													<span>En Curso</span>
+												</a>
+											</li>
+											<li>
+												<a class="dropdown-item" href="#" @click="updateStatus(item, 4)">
+													<span>Detenida</span>
+												</a>
+											</li>
+											<li>
+												<a class="dropdown-item" href="#" @click="updateStatus(item, 5)">
+													<span>En Revisión</span>
+												</a>
+											</li>
+											<li>
+												<a class="dropdown-item" href="#" @click="updateStatus(item, 6)">
+													<span>Completada</span>
+												</a>
+											</li>
+											<li>
+												<a class="dropdown-item" href="#" @click="updateStatus(item, 7)">
+													<span>Anulada</span>
+												</a>
+											</li>
+										</ul>
+									</div>
+								</td>
+
+								<!-- ACCIONES -->
+								<td>
+									<div class="text-center">
+										<button
+											class="btn btn-sm me-2"
+											:class="{ 'btn-light' : ui_theme =='light', 'btn-dark' : ui_theme =='dark' }"
+											@click="openArchiveTaskModal(item)"
+										>
+											<i class="fas fa-eye" v-if="item.archived === true"></i>
+											<i class="fas fa-eye-slash" v-else></i>
+										</button>
+										<button
+											class="btn btn-sm"
+											@click="openDeleteTaskModal(item)"
+										>
+											<i class="fas fa-trash-alt"></i>
+										</button>
+									</div>
+								</td>
+
+							</tr>
+						</tbody>
+					</table>
+					<div class="card-footer border-top-0">
+						<p class="mb-0 fs-08 text-muted">{{ tasks.items.length }} tarea<span v-if="tasks.items.length>1">s</span></p>
+					</div>
 				</div>
-				<table class="table table-hover mb-0">
-					<thead class="border-top">
-						<tr>
-							<th style="width: 25%">Título</th>
-							<th style="width: 10%">Horas</th>
-							<th style="width: 15%">Cliente</th>
-							<th style="width: 15%">Entrega</th>
-							<th style="width: 15%">Estado</th>
-							<th style="width: 10%"></th>
-						</tr>			
-					</thead>
-					<tbody v-for="(item, index) in tasks.items" :key="index">
-						<tr>
 
-							<!-- TITULO -->
-							<td>
-								<div v-if="loaders.title.active == true && loaders.title.id == item.id" :class="{ 'opacity-50' : loaders.title.loading }">
-									<input
-										class="form-control form-control-sm"
-										v-model="loaders.title.value"
-										@change="updateTitle(item)"
-										@blur="disableTitleSelector()"
-									/>
-								</div>
-								<div v-else-if="item.title && item.title != null">
-									<button
-										class="btn btn-sm w-100 text-start"
-										:class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }"
-										@click="enableTitleSelector(item)"
-									>
-										<span>{{ item.title }}</span>
-									</button>
-								</div>
-								<div v-else>
-									<button
-										class="btn btn-sm w-100 text-start"
-										:class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }"
-										@click="enableTitleSelector(item)"
-									>
-										<i class="fas fa-quote-left"></i>
-									</button>
-								</div>
-							</td>
-
-							<!-- UNIDADES -->
-							<td>
-								<div class="input-group" :class="{ 'opacity-50' : loaders.units.loading == true && loaders.units.id == item.id }">
-									<button class="btn btn-outline-secondary btn-sm fs-075" @click="subUnit(item)" :disabled="item.units <= 1">
-										<i class="fas fa-fw fa-minus"></i>
-									</button>
-									<input
-										type="text"
-										class="form-control text-center form-control-sm"
-										:value="item.units"
-										disabled
-									>
-									<button class="btn btn-outline-secondary btn-sm fs-075" @click="addUnit(item)">
-										<i class="fas fa-fw fa-plus"></i>
-									</button>
-								</div>
-							</td>
-
-							<!-- CLIENTE -->
-							<td>
-								<div v-if="loaders.client.active == true && loaders.client.id == item.id" :class="{ 'opacity-50' : loaders.client.loading }">
-									<select
-										class="form-select form-select-sm"
-										v-model="loaders.client.value"
-										@change="updateClient(item)"
-										@blur="disableClientSelector()"
-									>
-										<option :value="null" disabled selected>Seleccionar</option>
-										<option v-for="(item, index) in clients.items" :key="index" :value="item.id">{{ item.name }}</option>
-									</select>
-								</div>
-								<div v-else-if="item.client_id && item.client_id != null && item.client && item.client.id">
-									<button
-										class="btn btn-sm w-100 text-center"
-										:class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }"
-										@click="enableClientSelector(item)"
-									>
-										<span>{{ item.client.name }}</span>
-									</button>
-								</div>
-								<div v-else>
-									<button
-										class="btn btn-sm w-100 text-center"
-										:class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }"
-										@click="enableClientSelector(item)"
-									>
-										<i class="fas fa-building"></i>
-									</button>
-								</div>
-							</td>
-
-							<!-- ENTREGA -->
-							<td>
-								<div v-if="loaders.delivery_date.active == true && loaders.delivery_date.id == item.id" :class="{ 'opacity-50' : loaders.delivery_date.loading }">
-									<VueDatePicker
-										v-model="loaders.delivery_date.value"
-										:format="format"
-										locale="es"
-										cancelText="Cancelar"
-										selectText="Seleccionar"
-										:enableTimePicker="false"
-										:dark="ui_theme === 'dark'"
-										:clearable="false"
-										:auto-apply="true"
-										timezone="UTC"
-										ref="datepicker"
-										@update:model-value="updateDeliveryDate"
-									></VueDatePicker>
-								</div>
-								<div v-else-if="item.delivery_date && item.delivery_date != null && item.delivery_date.length > 0">
-									<button class="btn btn-sm w-100 text-start" :class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }" @click="enableDeliveryDatePicker(item)">
-										<i class="fas fa-calendar ms-1 me-2"></i>
-										<span>{{ item.delivery }}</span>
-									</button>
-								</div>
-								<div v-else>
-									<button class="btn btn-sm w-100 text-center" @click="enableDeliveryDatePicker(item)" :class="{ 'btn-dark' : ui_theme === 'dark', 'btn-light' : ui_theme === 'light' }">
-										<i class="fas fa-calendar"></i>
-									</button>
-								</div>
-							</td>
-
-							<!-- ESTADO -->
-							<td>
-								<div class="dropdown" :class="{ 'opacity-50' : loaders.status.loading === true && loaders.status.id === item.id }">
-									<button
-										class="btn dropdown-toggle btn-sm w-100"
-										type="button"
-										data-bs-toggle="dropdown"
-										aria-expanded="false"
-										:class="{
-											'btn-light' : item.status_id === 1,
-											'btn-secondary' : item.status_id === 2,
-											'btn-danger' : item.status_id === 3,
-											'btn-warning' : item.status_id === 4,
-											'btn-info' : item.status_id === 5,
-											'btn-success' : item.status_id === 6,
-											'btn-dark' : item.status_id === 7,
-										}"
-									>
-										<span class="me-1" v-if="item.status_id === 1">Backlog</span>
-										<span class="me-1" v-if="item.status_id === 2">Planificada</span>
-										<span class="me-1" v-if="item.status_id === 3">En Curso</span>
-										<span class="me-1" v-if="item.status_id === 4">Detenida</span>
-										<span class="me-1" v-if="item.status_id === 5">En Revisión</span>
-										<span class="me-1" v-if="item.status_id === 6">Completada</span>
-										<span class="me-1" v-if="item.status_id === 7">Anulada</span>
-									</button>
-									<ul class="dropdown-menu">
-										<li>
-											<a class="dropdown-item" href="#" @click="updateStatus(item, 1)">
-												<span>Backlog</span>
-											</a>
-										</li>
-										<li>
-											<a class="dropdown-item" href="#" @click="updateStatus(item, 2)">
-												<span>Planificada</span>
-											</a>
-										</li>
-										<li>
-											<a class="dropdown-item" href="#" @click="updateStatus(item, 3)">
-												<span>En Curso</span>
-											</a>
-										</li>
-										<li>
-											<a class="dropdown-item" href="#" @click="updateStatus(item, 4)">
-												<span>Detenida</span>
-											</a>
-										</li>
-										<li>
-											<a class="dropdown-item" href="#" @click="updateStatus(item, 5)">
-												<span>En Revisión</span>
-											</a>
-										</li>
-										<li>
-											<a class="dropdown-item" href="#" @click="updateStatus(item, 6)">
-												<span>Completada</span>
-											</a>
-										</li>
-										<li>
-											<a class="dropdown-item" href="#" @click="updateStatus(item, 7)">
-												<span>Anulada</span>
-											</a>
-										</li>
-									</ul>
-								</div>
-							</td>
-
-							<!-- ACCIONES -->
-							<td>
-								<div class="text-center">
-									<button
-										class="btn btn-sm me-2"
-										:class="{ 'btn-light' : ui_theme =='light', 'btn-dark' : ui_theme =='dark' }"
-										@click="openArchiveTaskModal(item)"
-									>
-										<i class="fas fa-eye" v-if="item.archived === true"></i>
-										<i class="fas fa-eye-slash" v-else></i>
-									</button>
-									<button
-										class="btn btn-sm"
-										@click="openDeleteTaskModal(item)"
-									>
-										<i class="fas fa-trash-alt"></i>
-									</button>
-								</div>
-							</td>
-
-						</tr>
-					</tbody>
-				</table>
-				<div class="card-footer border-top-0">
-					<p class="mb-0 fs-08 text-muted">{{ tasks.items.length }} tarea<span v-if="tasks.items.length>1">s</span></p>
-				</div>
 			</div>
 
 		</div>
-
+	</div>
+		<div class="col-3">
+			<UsersList />
+		</div>
 	</div>
 </template>
 

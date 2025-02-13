@@ -27,6 +27,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebSocketController;
 
 Route::post('websocket/auth', [WebSocketController::class, 'auth']);
+Route::get('users/list', [UserController::class, 'users_list']);
+
 Route::group(['middleware' => ['auth:api', 'userlog']], function () {
     Route::get('clients', [ClientController::class, 'browse'])->middleware('role:admin,super,user');
     Route::put('clients/{id}/name', [ClientController::class, 'update_name'])->middleware('role:admin,super,user');

@@ -75,6 +75,15 @@ export default {
 		loading: false,
 		items: [],
 	},
+	users_list: {
+		loading: false,
+		loaded: false,
+		items: [],
+	},
+	users_online: {
+		loading: false,
+		items: [],
+	},
 	user_logs: {
 		browser: {
 			limit: 10,

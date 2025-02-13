@@ -94,12 +94,13 @@ class UserController extends Controller
             'email_verified_at' => now(),
             'password' => Hash::make($password),
             'remember_token' => Str::random(10),
+            'websocket_token' => Str::random(64),
         ]);
         UserRole::create([
             'role_id' => 1,
             'user_id' => $user->id,
         ]);
-        Mail::to($user->email)->send(new NewUser($user));
+        //Mail::to($user->email)->send(new NewUser($user));
         return response()->json($user, 200);
     }
 
@@ -295,5 +296,11 @@ class UserController extends Controller
         $currentItems = array_slice($items->toArray(), $request->limit * ($request->page - 1), $request->limit);
         $response = new LengthAwarePaginator($currentItems, count($items), $request->limit, $request->page);
         return response()->json($response, 200);
+    }
+
+    public function users_list(Request $request){
+        #if (!$request->filled('access_token')) return response()->json(['message' => 'Missing "access_token"'], 400);
+        $items = User::where('enabled', TRUE)->select('id', 'name', 'last_seen')->get();
+        return response()->json($items, 200);
     }
 }

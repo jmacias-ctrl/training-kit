@@ -29,6 +29,12 @@ export default {
 	users(state) {
 		return state.users;
 	},
+	users_online(state) {
+		return state.users_online;
+	},
+	users_list(state) {
+		return state.users_list;
+	},
 	user_logs(state) {
 		return state.user_logs;
 	},

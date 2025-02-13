@@ -49,6 +49,11 @@ export default {
 					socket.auth = { token: this.websocket.token };
 					if(!socket.connected) socket.connect();
 					socket.on('connect', () => this.websocket.online = true);
+					socket.on("user_online", (arg) => {
+						this.$store.dispatch('users_online', arg).then(() => {
+							this.$store.dispatch('users_list', arg)
+						});
+					});
 					socket.on('disconnect', () => this.websocket.online = false);
 				});
 			});

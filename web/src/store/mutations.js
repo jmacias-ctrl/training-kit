@@ -76,6 +76,15 @@ export default {
 		state.user_logs.loading = false;
 		state.user_logs.items = data;
 	},
+	users_list(state, data) {
+		state.users_list.loading = false;
+		state.users_list.items = data;
+	},
+	users_online(state, data) {
+		state.users_online.loading = false;
+		state.users_online.loaded = true;
+		state.users_online.items = data;
+	},
 	user_roles(state, data) {
 		state.modals.user_roles.loading = false;
 		state.modals.user_roles.items.user = data.user;
